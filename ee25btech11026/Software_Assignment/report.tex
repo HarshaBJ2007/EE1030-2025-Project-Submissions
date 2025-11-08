@@ -1,0 +1,388 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{algorithm}
+\usepackage[linesnumbered,ruled,vlined]{algorithm2e}
+\usepackage{algpseudocode}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{txfonts}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage{mathtools}
+\usepackage{gensymb}
+\usepackage{comment}
+\usepackage[breaklinks=true]{hyperref}
+\usepackage{tkz-euclide} 
+\usepackage{listings}
+\usepackage{gvv}                                      
+\usepackage{longtable}                                       
+\usepackage{calc}   
+\usepackage{multicol}
+\usepackage{multirow}                                         
+\usepackage{hhline}                                           
+\usepackage{ifthen}                                           
+\usepackage{lscape}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{float}
+\usepackage{circuitikz}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{problem}{Problem}
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{example}{Example}[section]
+\newtheorem{definition}[problem]{Definition}
+\newcommand{\BEQA}{\begin{eqnarray}}
+\newcommand{\nCr}[2]{\,^{#1}C_{#2}}
+\newcommand{\EEQA}{\end{eqnarray}}
+\geometry{a4paper, margin=1in}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1em}
+
+\title{\underline{\textbf{Software Assignment Report}}\\[10pt]
+\underline{\textbf{Image compression using Truncated SVD}}}
+\author{Harsha B J - EE25BTECH11026}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+Singular Value Decomposition (SVD) is a fundamental matrix factorization technique widely used in scientific computing, data analysis, and image processing. It provides a powerful method for representing complex data in terms of its most significant components. In the context of digital images, SVD allows an image to be expressed as a combination of orthogonal patterns weighted by their relative importance. This makes it a natural and effective tool for image compression, noise reduction, and dimensionality reduction.\\
+\\
+A digital grayscale image can be represented as a two-dimensional matrix, where each element corresponds to the intensity of a pixel. The essential idea behind SVD-based image compression is that most of the visual information in an image is concentrated in a small number of dominant features. By decomposing the image matrix into these features and discarding the less significant ones, the image can be reconstructed in a form that looks almost identical to the original but requires far less data to store.\\
+\\
+SVD is particularly attractive because it offers a mathematically optimal low-rank approximation of a matrix, meaning it achieves the best possible reconstruction quality for a given number of retained features. Furthermore, it provides an elegant connection between linear algebra and image representation, allowing images to be analyzed in terms of orthogonal basis patterns and their respective strengths.\\
+\\
+This project aims to explore how Randomized Singular Value Decomposition (rSVD) can be applied for image compression, how the selection of significant singular values influences image quality, and how the algorithm can be efficiently implemented using a hybrid architecture that combines Python as the front-end and C as the computational backend. In this approach, Python manages image handling, visualization, and user interaction, while C performs the core mathematical operations such as random projection, matrix decomposition, and reconstruction. This design leverages the numerical efficiency of C and the flexibility of Python to achieve a scalable, high-performance, and interpretable framework for image compression based on randomized SVD.
+
+\subsection{Summary of Gilbert Strang's Lecture on SVD}
+The concept of Singular Value Decomposition (SVD) was presented in an intuitive and geometric manner by Prof. Gilbert Strang in his MIT OpenCourseWare Linear Algebra lectures. In the lecture, Strang explains that every matrix—whether square or rectangular—can be expressed as a product of three matrices that reveal its essential structure. He describes this decomposition as:
+\begin{align*}
+    \vec{A}=\vec{U}\vec{\Sigma}\vec{V}^{\top}
+\end{align*}
+where $\vec{U}$ and $\vec{V}$ are orthogonal matrices, and $\Sigma$
+is a diagonal  matrix containing non-negative numbers known as singular values.\\
+\\
+Strang emphasizes that SVD provides not just an algebraic factorization, but also a geometric interpretation of how a matrix acts on vectors. He explains that multiplying by $\vec{V}^{\top}$ first rotates or reflects the coordinate system, $\Sigma$ then stretches or compresses the space along orthogonal directions defined by the singular values, and finally $\vec{U}$ applies another rotation. This process transforms a unit circle (or sphere) into an ellipse (or ellipsoid), with the lengths of its principle axes corresponding to the singular values. This geometric viewpoint reveals how the matrix scales and reorients data.\\
+\\
+Another key insight from Strang’s lecture is the relationship between singular values and eigenvalues. He shows that the singular values of $\vec{A}$ are the square roots of the eigen values if $\vec{A}^{\top}\vec{A}$.The right singular vectors $\brak{\vec{V}}$ are the eigen vectors of $\vec{A}^{\top}\vec{A}$, while the left singular vectors $\brak{\vec{U}}$ are the eigenvalues of $\vec{A}\vec{A}^{\top}$. This link connects SVD to one of the most fundamental topics in linear algebra — eigen decomposition — but extends it to apply to all matrices, not just symmetric ones.\\
+\\
+Strang also explains the rank of a matrix in terms of its singular values. The number of non-zero singular values equals the rank of $\vec{A}$ and each singular value represents how much \textbf{energy} or \textbf{information} that direction carries. Retaining only the largest singular values yields a low-rank approximation that captures most of the matrix’s essential behavior while discarding minor details. This idea underpins many applications such as image compression, noise reduction, and data approximation.\\
+\\
+The lecture concludes by highlighting the interpretative power of SVD — it decomposes any matrix into a sequence of rotations and scalings, providing a clear understanding of its internal structure. Strang’s presentation makes the abstract algebra of SVD visually intuitive, illustrating how linear transformations can be broken into independent geometric actions.
+
+
+\section{Mathematical Background}
+A grayscale image can be represented as a real-valued matrix $\vec{A}$ of size $m \times n$, where each element $\vec{A}_{ij}$ represents the pixel intensity at position $\brak{i,j}$. The singular value decomposition of $\vec{A}$ expresses this matrix as a product of three matrices:
+\begin{align*}
+    \vec{A}=\vec{U}\vec{\Sigma}\vec{V}^{\top}
+\end{align*}
+where:
+\begin{itemize}
+    \item $\vec{U}$ is an $m \times m$ orthogonal matrix whose columns are called left singular vectors
+    \item $\vec{V}$ is an $n \times n$ orthogonal matrix whose columns are called right singular vectors
+    \item $\vec{\Sigma}$ is an $m \times n$ diagonal matrix containing the singular values $\sigma_1,\sigma_2,\cdots,\sigma_r$ arranged in decreasing order.
+\end{itemize}
+The singular values represent the relative importance of each corresponding pair of singular vectors in reconstructing the matrix. The SVD can also be expressed as a sum of rank-one matrices:
+\begin{align*}
+    \vec{A}_k=\sum_{i=1}^{r}\sigma_iu_iv_i^{\top}
+\end{align*}
+where $u_i$ and $v_i$ are the $i^{th}$ columns of $\vec{U}$ and $\vec{V}$, respectively, and r is the rank of the matrix $\vec{A}$.\\
+\\
+In image compression, we make use of the fact that for most natural images, the singular values decrease rapidly. This means that only a few of them contribute significantly to the structure of the image, while the smaller ones correspond to finer details or noise. Therefore, we can approximate the image by keeping only the top k singular values and their corresponding singular vectors:
+\begin{align*}
+    \vec{A}_k=\sum_{i=1}^{k}\sigma_iu_iv_i^{\top}
+\end{align*}
+Here, $\vec{A}_k$ is called the truncated SVD approximation of rank k. This approximation of $\vec{A}$ minimizes the reconstruction error under the Frobenius norm, meaning:
+\begin{align*}
+    \|\vec{A}-\vec{A}_k\|_{F}= \min_{rank\brak{\vec{B}}=k}\|\vec{A}-\vec{B}\|_{F}
+\end{align*}
+Thus, $A_k$ is the best possible rank-k approximation of $\vec{A}$ in the least-square sense. This property forms the theoretical basis for using SVD in image compression.
+
+\section{Motivation}
+The motivation for using Singular Value Decomposition in image compression arises from its ability to represent data in a compact yet meaningful way. Digital images often contain redundant information — nearby pixels are highly correlated, and much of the visual detail can be captured using a smaller number of independent patterns. SVD naturally identifies these patterns by decomposing the image matrix into orthogonal components ordered by their contribution to the overall structure.\\
+\\
+The singular values provide a direct measure of importance: the largest ones correspond to dominant features such as edges, gradients, and large texture regions, while smaller ones represent minor variations or noise. By retaining only the significant singular values, we can reconstruct an image that appears visually similar to the original but requires far fewer data points. This achieves compression without the need for predefined transforms or frequency-domain operations.\\
+\\
+Furthermore, SVD offers deep insight into the mathematical nature of image representation. It shows that every image can be expressed as a combination of rank-one matrices, each carrying independent structural information. Implementing this process in C without external libraries also strengthens understanding of numerical linear algebra — including eigenvalue computation, orthogonalization, and iterative approximation — which are fundamental concepts in scientific computing.\\
+\\
+Overall, SVD-based image compression is both conceptually elegant and practically valuable. It combines the rigor of linear algebra with the visual interpretability of image data, making it an excellent technique for understanding how complex visual information can be efficiently stored, transmitted, and reconstructed.
+
+\section{Algorithm and Implementation}
+
+\subsection{Selected Algorithm: Truncated Singular Value Decomposition}
+The algorithm selected for this project is the Truncated Singular Value Decomposition (SVD), a mathematical technique that decomposes any real matrix into orthogonal components that reveal its underlying structure. \\
+  For an image represented as a two-dimensional intensity matrix $
+\vec{A}$ of size $m \times n$, the SVD expresses $\vec{A}$ as:
+\begin{align*}
+    \vec{A}=\vec{U}\vec{\Sigma}\vec{V}^{\top}
+\end{align*}
+Here:
+\begin{itemize}
+    \item $\vec{U}$ is an $m \times m$ orthogonal matrix whose columns are the left singular vectors.
+    \item $\vec{\Sigma}$ is an $m \times n$ diagonal matrix containing the singular values $\sigma_1,\sigma_2,\cdots,\sigma_p$ $\brak{p = min\brak{m,n}}$,arranged in descending order
+    \item $\vec{V}$ is an $n \times n$ orthogonal matrix whose columns are the right singular vectors.
+\end{itemize}
+Each singular value represents the importance or energy of its corresponding rank-one component.
+To compress an image, only the top k singular values and their associated singular vectors are retained. The reconstructed approximation: 
+\begin{align*}
+    \vec{A}_k=\vec{U}_k\vec{\Sigma}_k\vec{V}_k^{\top}
+\end{align*}
+captures the major visual information while discarding less significant details, thereby reducing storage requirements.
+
+\subsection{Implementation Overview}
+The project employs a hybrid implementation that integrates Python as the front-end and C as the computational backend.\\
+\\
+Python handles user interaction, image preprocessing, visualization, and metric computation, while the C code performs all the numerical operations related to the randomized Singular Value Decomposition (SVD).
+This design combines the flexibility of Python with the numerical efficiency of C, enabling accurate and fast image compression.\\
+\\
+The process is divided into five principle stages:
+\newpage
+\textbf{Stage 1: Image Conversion and Preprocessing $\brak{Python}$}
+\begin{enumerate}
+    \item The user provides an input image in \textt{.jpg} or \texttt{.png} format.
+    \item Python, using the \textbf{ImageIO} library, reads and converts the image into a normalized grayscale matrix with pixel values scaled to the range $\sbrak{0,1}$
+    \begin{itemize}
+        \item If the image is RGB, a weighted average of the three color channels is used for conversion.
+    \end{itemize}
+    \item The resulting two-dimensional NumPy array, denoted as $\vec{A}\sbrak{m \times n}$, represents the image intensity matrix.
+    \item This matrix is flattened and passed as a contiguous buffer to the C function \texttt{svd.compute()} through the ctypes interface.
+\end{enumerate}
+
+\textbf{Stage 2:Decomposition of the image matrix  $\brak{C\;backend}$}\\
+\\
+All numerical computations are performed inside a single C source file , compiled into a shared library $\brak{\textt{libsvd.so}}$ and loaded dynamically by Python.\\
+\\
+The C routine implements the randomized SVD pipeline as follows:
+\begin{enumerate}
+    \item \textbf{Random Projection:}
+    \begin{itemize}
+        \item A Gaussian matrix $\vec{\Omega}\sbrak{n \times \brak{k+p}}$ is generated, where p=10 is the oversampling parameter.
+        \item A matrix $\vec{Y}=\vec{A} \times \vec{\Omega}$ is formed using standard multiplication
+    \end{itemize}
+    \item \textbf{Orthonormalization:}
+    \begin{itemize}
+        \item Modified Gram-Schimdt $\brak{MGS}$ orthonormalization is applied to $\vec{Y}$ to form an orthonormal basis $\vec{Q}$
+    \end{itemize}
+    \item \textbf{Projection and Small matrix transformation:}
+    \begin{itemize}
+        \item The smaller matrix $\vec{B}=\vec{Q}^{\top}\vec{A}$ of size $\brak{k + p} \times n$ is computed for reduced SVD computation
+    \end{itemize}
+    \item \textbf{Small-SVD Computation:}
+    \begin{itemize}
+        \item The symmetric matrix $\vec{B}\vec{B}^{\top}$ is formed, and its eigen decomposition is obtained using jacobi eigen algorithm.
+        \item The eigenvalues yield the squared singular values, and their square roots give the singular values $\sigma_i$.
+        \item Corresponding eigen vectors form the left singular vectors of $\vec{B}$, denoted by $\vec{U_b}$.
+    \end{itemize}
+    \item \textbf{Right Singular vectors:}
+    \begin{itemize}
+        \item The right singular vectors $\vec{V}$ ar computed as $\vec{V}=\frac{\vec{B}^{\top}\vec{U_b}}{\sigma_i}$, followed by orthonormalization.
+    \end{itemize}
+    \item \textbf{Final Left Singular Vectors:}
+    \begin{itemize}
+        \item The left singular vectors for the original image are computed as $\vec{U}=\vec{Q}\vec{U_b}$
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Stage 3: Rank Truncation $\brak{C\; backend}$}
+The user specifies the rank k, controlling the level of compression.
+Only the top k singular values and corresponding singular vectors are retained.The truncated components $\vec{U_k},\vec{\Sigma_k}$ and $\vec{V_k}$ capture the dominant image features while discarding fine details.
+
+\textbf{Stage 4: Reconstruction and Normalisation}
+\begin{enumerate}
+    \item The reconstructed image is computed in C as:
+    \begin{align}
+        \vec{A_k}=\vec{U_k}\vec{\Sigma_k}\vec{V_k}^{\top}
+    \end{align}
+    \item The reconstructed pixel values are normalised and clamped to $\sbrak{0,1}$ to ensure valid output.
+    \item The reconstructed matrix is returned to Python via the output buffer.
+    \item Python scales the image to $\sbrak{0,255}$ and saves the result as a \textt{.png} or \textt{.jpg} file in the output directory.
+\end{enumerate}
+
+
+\textbf{Stage 5: Performance Evaluation}
+After reconstruction, several performance metrics are computed to assess the efficiency and quality of compression:
+\begin{itemize}
+    \item Compression Ratio $\brak{CR}$:
+    \begin{align*}
+        CR= \frac{k\brak{m+n+1}}{m \times n}
+    \end{align*}
+    Represents the proportion of data retained relative to the original image size.
+    \item Root Mean Square Error $\brak{RMSE}$:
+    \begin{align*}
+        RMSE=\sqrt{\frac{1}{mn}\sum \brak{A-A_K}^2}
+    \end{align*}
+    Measures the average reconstruction error per pixel.
+    \item Peak Signal-to-Noise Ratio $\brak{PSNR}$:
+    \begin{align*}
+        PSNR=20\log_{10}{\brak{\frac{255}{RMSE}}}
+    \end{align*}
+    Expressed in decibels$\brak{dB}$,higher PSNR indictes better image quality.
+    \item Frobenius norm Error:
+    \begin{align*} \|\vec{A}-\vec{A_k}\|_{F}=\sqrt{\sum_{i=1}^{m}\sum_{j=1}^{n}\brak{\vec{A}_{ij}-\vec{A}_{k,ij}}^2}
+    \end{align*}
+    Quantifies the total reconstruction deviation between the original and compressed images in Euclidean sense. It reflects how closely the reconstructed matrix approximates the original one.
+\end{itemize}
+These metrics provide objective measures for evaluating the trade-off between image quality and compression efficiency.
+
+\subsection{Pseudocode of the Implementation}
+\begin{algorithm}[H]
+\caption{Randomized SVD-based Image Compression (Python + C)}
+\label{alg:rsvd_py_c}
+\begin{algorithmic}[1]
+\Require Image path, target rank $k$
+\Ensure Compressed image $A_k$ and metrics (RMSE, PSNR, CR, Frobenius)
+
+\Procedure{PythonMain}{img\_path, k}
+    \State $A \gets$ read and convert image to grayscale, normalize to $[0,1]$
+    \State $(m,n) \gets \text{shape}(A)$
+    \State flatten $A$ and allocate output buffer $out$
+    \State call C: \texttt{svd\_compress}($A$, $m$, $n$, $k$, $out$)
+    \State reshape $out \to A_k$, clip to $[0,1]$
+    \State compute RMSE, PSNR, CR, $\|A-A_k\|_F$ using NumPy
+    \State display and save original and compressed images
+\EndProcedure
+
+\vspace{3pt}
+\Procedure{C: svd\_compress}{$A$, $m$, $n$, $k$, $out$}
+    \State $p \gets 10$; $l \gets \min(k+p, \min(m,n))$
+    \State generate Gaussian $\Omega[n][l]$; compute $Y = A \Omega$
+    \State orthonormalize $Y \rightarrow Q$ (MGS)
+    \State form $B = Q^T A$; compute $BB^T = B B^T$
+    \State obtain eigenpairs $(\Lambda, U_b)$ via Jacobi; $\sigma_i = \sqrt{\Lambda_i}$
+    \State compute $V = B^T U_b / \sigma_i$; orthonormalize columns
+    \State compute $U = Q U_b$
+    \State reconstruct $A_k = \sum_{i=1}^{k} \sigma_i U_i V_i^T$
+    \State clip $A_k$ to $[0,1]$, flatten to $out$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Summary}
+The overall system integrates a Python front-end with a C backend to balance flexibility and computational efficiency. Python manages image loading, preprocessing, user interaction, and visualization, while the C module executes the core randomized SVD operations—matrix multiplication, orthonormalization, eigen decomposition, and reconstruction. \\
+\\
+Communication between the two layers is handled using the ctypes interface, allowing NumPy arrays to be passed directly as memory buffers with minimal overhead. This hybrid structure enables Python’s simplicity for experimentation while leveraging C’s performance for heavy numerical tasks. The implementation achieves significant compression with minimal visual degradation, offering an efficient, lightweight, and fully self-contained image compression pipeline.
+
+\newpage
+
+\section{Reconstructed images for different values of k}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\columnwidth]{figs/einstein}
+    \caption{Einstein.jpg for different values of k}
+    \label{fig:einstein}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\columnwidth]{figs/globe.jpeg}
+    \caption{Globe.jpg for different values of k}
+    \label{fig:globe}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\columnwidth]{figs/greyscale.png}
+    \caption{Greyscale.png for different values of k}
+    \label{fig:greyscale}
+\end{figure}
+
+\section{Error Analysis}
+
+\begin{table}[H]
+    \centering
+    \input{tables/Einstein}
+    \caption{Error analysis for einstein.jpg}
+    \label{tab:einstein}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \input{tables/Globe}
+    \caption{Error analysis for globe.jpg}
+    \label{tab:globe}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \input{tables/greyscale}
+    \caption{Error analysis for greyscale.png}
+    \label{tab:greyscale}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \input{tables/sample}
+    \caption{Error analysis for sample.jpg}
+    \label{tab:sample}
+\end{table}
+\newpage
+The error analysis was performed using quantitative metrics including RMSE, PSNR, Compression Ratio (CR), and the Frobenius Norm error. As the compression rank $\brak{k}$ increases, the reconstruction error decreases steadily, reflected by lower RMSE and Frobenius Norm values. \\
+\\
+Correspondingly, the PSNR improves, indicating higher visual fidelity of the reconstructed image. At very low ranks, the loss of fine details becomes evident, resulting in higher RMSE and lower PSNR, though the compression ratio remains high. Conversely, larger k values preserve more singular components, producing nearly lossless reconstructions but with reduced compression efficiency. The Frobenius norm effectively summarizes the total deviation between the original and reconstructed matrices, confirming that most of the image’s energy is captured within the leading singular values. \\
+\\ Overall, the metrics demonstrate that the randomized SVD achieves a strong balance between accuracy and compression efficiency, with minimal perceptual loss even at moderate compression levels.
+
+
+\section{Discussion of Trade-offs and Reflections on Implementation Choice}
+
+\subsection{Accuracy vs. Compression Ratio}
+
+A key trade-off in SVD-based image compression lies between the accuracy of reconstruction and the amount of compression achieved. Retaining a small number of singular values results in higher compression ratios but introduces noticeable loss of fine details and contrast, especially in textured regions. Increasing k preserves more image features and enhances PSNR, but at the cost of larger storage requirements and slower computation. The results confirm that moderate ranks can achieve perceptually high-quality reconstructions while significantly reducing storage space, striking a practical balance between efficiency and fidelity.
+
+\subsection{Computational Efficiency vs. Implementation Complexity}
+
+The decision to offload numerical computations to C provided substantial performance benefits, as matrix multiplications and eigen decompositions are computationally expensive in pure Python. However, this also introduced additional implementation complexity related to memory management, pointer handling, and foreign function interfacing through \texttt{ctypes}. Despite this, the modular design—where Python handles orchestration and C performs computation—proved effective in maintaining clarity and performance without relying on external numerical libraries such as BLAS or LAPACK.
+
+\subsection{Randomized SVD vs. Classical SVD}
+
+The use of Randomized SVD significantly improved scalability compared to the classical full SVD approach. By projecting the data onto a lower-dimensional subspace using random Gaussian matrices, the algorithm approximates dominant singular components with far fewer computations. This introduces a small approximation error but provides large gains in execution speed, particularly for high-resolution images. The results show that this trade-off is favorable, as the quality degradation is negligible for practical compression ranks.
+
+\subsection{Python Front-End vs. C Backend}
+
+The hybrid design allowed each language to serve its strengths: Python was used for image handling, visualization, and metric computation, while C efficiently executed low-level mathematical routines. This separation simplified experimentation and improved runtime efficiency. However, cross-language communication required careful control of data formats (e.g., contiguous memory buffers) and consistent normalization between languages. Overall, the combination delivered both usability and performance, validating the design choice.
+
+\subsection{Numerical Stability and Resource Management}
+
+While implementing matrix operations manually in C provided control and educational insight, it also required additional attention to numerical stability and precision. The use of double-precision floating-point arithmetic ensured reliable results during eigen decomposition and orthonormalization. However, since the algorithm relies on dynamic memory allocation for multiple intermediate matrices, efficient memory freeing was crucial to prevent leaks. These trade-offs highlight the challenges of low-level numerical programming without external libraries.
+
+\subsection{Overall Reflection}
+
+The project demonstrated that integrating high-level and low-level programming paradigms can yield an optimal mix of performance, interpretability, and portability. Randomized SVD offered a practical compromise between computational cost and reconstruction accuracy, and the Python + C hybrid framework provided a scalable foundation for further exploration, such as GPU acceleration or extension to color images. The experience emphasized both the efficiency of carefully optimized C code and the flexibility of Python as a front-end for algorithmic experimentation.
+
+\section{Extend to color images by applying SVD separately to R, G, B channels}
+
+To extend the compression to color images, the randomized SVD was applied independently to the R, G, and B channels, each using the same target rank 
+k. The three reconstructed channels were then merged to form the final compressed color image. As shown in the figure and table below,
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\columnwidth]{figs/Sample.jpeg}
+    \caption{Sample.jpeg for different values of k}
+    \label{fig:sample}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \input{tables/sample}
+    \caption{Error analysis for sample.jpg}
+    \label{tab:sample}
+\end{table}
+
+the method preserves overall color tone and structure with only a minor increase in error values compared to the grayscale case. The slight rise in RMSE and Frobenius norm arises from independent channel approximations, but the visual quality remains nearly indistinguishable from the original. This confirms that the randomized SVD approach generalizes well to multi-channel image compression while maintaining both efficiency and perceptual accuracy.
+
+\newpage
+
+
+\end{document}

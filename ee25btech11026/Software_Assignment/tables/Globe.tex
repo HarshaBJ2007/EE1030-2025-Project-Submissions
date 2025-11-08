@@ -1,0 +1,164 @@
+
+\def\ifundefined#1{\expandafter\ifx\csname#1\endcsname\relax}
+
+                        
+\ifundefined{inputGnumericTable}
+
+
+	\def\gnumericTableEnd{\end{document}}
+
+
+
+	\documentclass[12pt%
+			  %,landscape%
+                ]{report}
+      \usepackage[latin1]{inputenc}
+      \usepackage{fullpage}
+      \usepackage{color}
+      \usepackage{array}
+      \usepackage{longtable}
+      \usepackage{calc}
+      \usepackage{multirow}
+      \usepackage{hhline}
+      \usepackage{ifthen}
+
+	\begin{document}
+
+
+\else
+
+    \def\gnumericTableEnd{}
+
+\fi
+
+
+
+\providecommand{\gnumericmathit}[1]{#1} 
+
+\providecommand{\gnumericPB}[1]%
+{\let\gnumericTemp=\\#1\let\\=\gnumericTemp\hspace{0pt}}
+ \ifundefined{gnumericTableWidthDefined}
+       \newlength{\gnumericTableWidth}
+       \newlength{\gnumericTableWidthComplete}
+       \newlength{\gnumericMultiRowLength}
+       \global\def\gnumericTableWidthDefined{}
+ \fi
+
+ \ifthenelse{\isundefined{\languageshorthands}}{}{\languageshorthands{english}}
+
+\providecommand\gnumbox{\makebox[0pt]}
+
+\setlength{\bigstrutjot}{\jot}
+\setlength{\extrarowheight}{\doublerulesep}
+
+\setlongtables
+
+\setlength\gnumericTableWidth{%
+	101pt+%
+	69pt+%
+	67pt+%
+0pt}
+\def\gumericNumCols{3}
+\setlength\gnumericTableWidthComplete{\gnumericTableWidth+%
+        \tabcolsep*\gumericNumCols*2+\arrayrulewidth*\gumericNumCols}
+\ifthenelse{\lengthtest{\gnumericTableWidthComplete > \linewidth}}%
+        {\def\gnumericScale{1*\ratio{\linewidth-%
+                    \tabcolsep*\gumericNumCols*2-%
+                    \arrayrulewidth*\gumericNumCols}%
+{\gnumericTableWidth}}}%
+{\def\gnumericScale{1}}
+
+
+\ifthenelse{\isundefined{\gnumericColA}}{\newlength{\gnumericColA}}{}
+\settowidth{\gnumericColA}{\begin{tabular}{@{}p{101pt*\gnumericScale}@{}}x\end{tabular}}
+
+\ifthenelse{\isundefined{\gnumericColB}}{\newlength{\gnumericColB}}{}
+\settowidth{\gnumericColB}{\begin{tabular}{@{}p{69pt*\gnumericScale}@{}}x\end{tabular}}
+
+\ifthenelse{\isundefined{\gnumericColC}}{\newlength{\gnumericColC}}{}
+\settowidth{\gnumericColC}{\begin{tabular}{@{}p{67pt*\gnumericScale}@{}}x\end{tabular}}
+
+\ifthenelse{\isundefined{\gnumericColD}}{\newlength{\gnumericColD}}{}
+\settowidth{\gnumericColD}{\begin{tabular}{@{}p{60pt*\gnumericScale}@{}}x\end{tabular}}
+
+\ifthenelse{\isundefined{\gnumericColE}}{\newlength{\gnumericColE}}{}
+\settowidth{\gnumericColE}{\begin{tabular}{@{}p{60pt*\gnumericScale}@{}}x\end{tabular}}
+
+
+\begin{tabular}[c]{%
+    b{\gnumericColA}%
+    b{\gnumericColB}%
+    b{\gnumericColC}%
+    b{\gnumericColD}%
+    b{\gnumericColE}%
+}
+
+
+\hhline{|-----|}
+	 \multicolumn{1}{|p{\gnumericColA}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{k}}}
+	&\multicolumn{1}{p{\gnumericColB}|}%
+	{\gnumericPB{\raggedright}\gnumbox[l]{\textbf{Frob\_Error}}}
+	&\multicolumn{1}{p{\gnumericColC}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{RMSE}}}
+    &\multicolumn{1}{p{\gnumericColD}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{PSNR}}}
+    &\multicolumn{1}{p{\gnumericColE}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{CR}}}
+\\
+\hhline{|-----|}
+	 \multicolumn{1}{|p{\gnumericColA}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{200}}}
+	&\multicolumn{1}{p{\gnumericColB}|}%
+	{\gnumericPB{\raggedright}\gnumbox[l]{\textbf{6926.050665}}}
+	&\multicolumn{1}{p{\gnumericColC}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{0.0316091}}}
+    &\multicolumn{1}{p{\gnumericColD}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{30.00}}}
+    &\multicolumn{1}{p{\gnumericColE}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{0.465897}}}
+\\
+\hhline{|-----|}
+	 \multicolumn{1}{|p{\gnumericColA}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{400}}}
+	&\multicolumn{1}{p{\gnumericColB}|}%
+	{\gnumericPB{\raggedright}\gnumbox[l]{\textbf{7307.509929}}}
+	&\multicolumn{1}{p{\gnumericColC}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{0.0334995}}}
+    &\multicolumn{1}{p{\gnumericColD}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{29.54}}}
+    &\multicolumn{1}{p{\gnumericColE}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{0.931795}}}
+\\
+\hhline{|-----|}
+	 \multicolumn{1}{|p{\gnumericColA}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{600}}}
+	&\multicolumn{1}{p{\gnumericColB}|}%
+	{\gnumericPB{\raggedright}\gnumbox[l]{\textbf{7544.138094}}}
+	&\multicolumn{1}{p{\gnumericColC}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{0.03442987}}}
+    &\multicolumn{1}{p{\gnumericColD}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{29.26}}}
+    &\multicolumn{1}{p{\gnumericColE}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{1.397692}}}
+\\
+\hhline{|-----|}
+	 \multicolumn{1}{|p{\gnumericColA}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{800}}}
+	&\multicolumn{1}{p{\gnumericColB}|}%
+	{\gnumericPB{\raggedright}\gnumbox[l]{\textbf{7342.295238}}}
+	&\multicolumn{1}{p{\gnumericColC}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{0.0335087}}}
+    &\multicolumn{1}{p{\gnumericColD}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{29.50}}}
+    &\multicolumn{1}{p{\gnumericColE}|}%
+    {\gnumericPB{\raggedright}\gnumbox[l]{\textbf{1.863590}}}
+\\
+\hhline{|-----|}
+
+\end{tabular}
+
+\ifthenelse{\isundefined{\languageshorthands}}{}{\languageshorthands{\languagename}}
+\gnumericTableEnd
+
+
